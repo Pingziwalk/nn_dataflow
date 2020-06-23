@@ -463,16 +463,24 @@ class LoopBlockingScheme():
             self.fetch.append(fe)
 
         # Consider the array mapping 1D-convlution refetch and the folding.
-        if all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
+        # print("***")
+        # print(self.bl_ts)
+        # print(self.bl_ords)
+        # print(self.fetch)
+        if not self.nld.pe_1d_conv_ful_buf and \
+            all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
                == 1 for _ord in range(self.bl_ords[self.BL.REGF][le.OFM])):
             self.fetch[self.BL.REGF][de.IFM] *= self.bl_ts[self.BL.REGF][le.OFM]
-        if all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
+        if not self.nld.pe_1d_conv_ful_buf and \
+            all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
                == 1 for _ord in range(self.bl_ords[self.BL.REGF][le.IFM])):
             self.fetch[self.BL.REGF][de.OFM] *= self.bl_ts[self.BL.REGF][le.IFM]
         if self.nld.is_filter_fold and \
            all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
                == 1 for _ord in range(self.bl_ords[self.BL.REGF][le.BAT])):
             self.fetch[self.BL.REGF][de.FIL] *= self.bl_ts[self.BL.REGF][le.BAT]
+        # print(self.fetch)
+        # print("***")
 
     def _calc_stats(self):
         '''
