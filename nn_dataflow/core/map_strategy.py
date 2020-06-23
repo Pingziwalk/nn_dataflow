@@ -41,6 +41,8 @@ class MapStrategy():
         self.batch_size = batch_size
         self.occupancy = occupancy
         self.dim_array = dim_array
+        self.pe_ful_buf_1d_conv = False
+        self.is_filter_fold = False
 
     def utilization(self):
         '''
@@ -217,7 +219,9 @@ class MapStrategyEyeriss(MapStrategy):
             nld = NestedLoopDesc(loopcnt=lcnt, unit_access=unit_access,
                                  usize_gbuf=usize_gbuf, usize_regf=usize_regf,
                                  unit_ops=unit_ops, unit_time=unit_time,
-                                 data_loops=data_loops)
+                                 data_loops=data_loops,
+                                 pe_1d_conv_ful_buf=self.pe_ful_buf_1d_conv,
+                                 is_filter_fold=self.is_filter_fold)
 
             # Check num of ops.
             util.assert_float_eq_int(
@@ -297,6 +301,10 @@ class MapStrategyEyeriss(MapStrategy):
         # adjustment.
         self.fold = PhyDim2(fold_h, fold_w)
         self.repl = PhyDim2(repl_h, repl_w)
+
+        # Set the is_filter_fold value.
+        if self.fold.h > 1:
+            self.is_filter_fold = True
 
         # The folded lpeset size on the ppeset after adjustment. The width may
         # be larger than the array width, but it is actually broken into the
@@ -399,6 +407,11 @@ class MapStrategyEyeriss(MapStrategy):
             sz_regf[de.IFM] = buflayer.wfil
             sz_regf[de.OFM] = 1
 
+            # Since we choose to only store a sliding window of data, the
+            # data may be fetched multipled times.
+            if buflayer.wfil == buflayer.hifm:
+                self.pe_ful_buf_1d_conv = True
+
         else:
             assert isinstance(self.layer, LocalRegionLayer)
 
@@ -454,6 +467,11 @@ class MapStrategyEyeriss(MapStrategy):
             # element is adequate.
             sz_regf[de.IFM] = buflayer.wreg
             sz_regf[de.OFM] = 1
+
+            # Since we choose to only store a sliding window of data, the
+            # data may be fetched multipled times.
+            if buflayer.wreg == buflayer.hifm:
+                self.pe_ful_buf_1d_conv = True
 
         # All utilized PEs run `time` to execute replicated `ops`
         assert util.isclose(time * self.dim_array.size() * self.util,

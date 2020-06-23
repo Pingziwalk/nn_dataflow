@@ -29,6 +29,8 @@ NESTED_LOOP_DESC_LIST = ['loopcnt',
                          'unit_ops',
                          'unit_time',
                          'data_loops',
+                         'pe_1d_conv_ful_buf',
+                         'is_filter_fold'
                         ]
 
 class NestedLoopDesc(namedtuple('NestedLoopDesc', NESTED_LOOP_DESC_LIST)):
@@ -80,6 +82,14 @@ class NestedLoopDesc(namedtuple('NestedLoopDesc', NESTED_LOOP_DESC_LIST)):
             if not isinstance(dls, DataDimLoops):
                 raise TypeError('NestedLoopDesc: element in data_loops '
                                 'must be a DataDimLoops instance.')
+
+        if not isinstance(ntp.pe_1d_conv_ful_buf, bool):
+            raise TypeError('NestedLoopDesc: pe_1d_conv_ful_buf must '
+                            'be a boolean.')
+
+        if not isinstance(ntp.is_filter_fold, bool):
+            raise TypeError('NestedLoopDesc: is_filter_fold must '
+                            'be a boolean.')
 
         return ntp
 
