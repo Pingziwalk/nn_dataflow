@@ -41,8 +41,7 @@ class MapStrategy():
         self.batch_size = batch_size
         self.occupancy = occupancy
         self.dim_array = dim_array
-        self.pe_ful_buf_1d_conv = False
-        self.is_filter_fold = False
+        self._regf_reusable = [False for _ in range(de.NUM)]
 
     def utilization(self):
         '''
@@ -214,14 +213,14 @@ class MapStrategyEyeriss(MapStrategy):
                                      for a in access_unitpass[me.REGF])
             # Finalize.
             unit_access = tuple(uaccess)
+            _regf_reusable = tuple(self._regf_reusable)
 
             # Make nested loop desc.
             nld = NestedLoopDesc(loopcnt=lcnt, unit_access=unit_access,
                                  usize_gbuf=usize_gbuf, usize_regf=usize_regf,
                                  unit_ops=unit_ops, unit_time=unit_time,
                                  data_loops=data_loops,
-                                 pe_1d_conv_ful_buf=self.pe_ful_buf_1d_conv,
-                                 is_filter_fold=self.is_filter_fold)
+                                 regf_reusable=_regf_reusable)
 
             # Check num of ops.
             util.assert_float_eq_int(
@@ -301,10 +300,6 @@ class MapStrategyEyeriss(MapStrategy):
         # adjustment.
         self.fold = PhyDim2(fold_h, fold_w)
         self.repl = PhyDim2(repl_h, repl_w)
-
-        # Set the is_filter_fold value.
-        if self.fold.h > 1:
-            self.is_filter_fold = True
 
         # The folded lpeset size on the ppeset after adjustment. The width may
         # be larger than the array width, but it is actually broken into the
@@ -409,8 +404,9 @@ class MapStrategyEyeriss(MapStrategy):
 
             # Since we choose to only store a sliding window of data, the
             # data may be fetched multipled times.
-            if buflayer.wfil == buflayer.hifm:
-                self.pe_ful_buf_1d_conv = True
+            self._regf_reusable[de.IFM] = (buflayer.wfil == buflayer.hifm)
+            self._regf_reusable[de.OFM] = (buflayer.wofm == 1)
+            self._regf_reusable[de.FIL] = (self.fold.h == 1)
 
         else:
             assert isinstance(self.layer, LocalRegionLayer)
@@ -470,8 +466,10 @@ class MapStrategyEyeriss(MapStrategy):
 
             # Since we choose to only store a sliding window of data, the
             # data may be fetched multipled times.
-            if buflayer.wreg == buflayer.hifm:
-                self.pe_ful_buf_1d_conv = True
+            self._regf_reusable[de.IFM] = (buflayer.wreg == buflayer.hifm)
+            self._regf_reusable[de.OFM] = (buflayer.wofm == 1)
+            self._regf_reusable[de.FIL] = (self.fold.h == 1)
+
 
         # All utilized PEs run `time` to execute replicated `ops`
         assert util.isclose(time * self.dim_array.size() * self.util,

@@ -29,8 +29,7 @@ NESTED_LOOP_DESC_LIST = ['loopcnt',
                          'unit_ops',
                          'unit_time',
                          'data_loops',
-                         'pe_1d_conv_ful_buf',
-                         'is_filter_fold'
+                         'regf_reusable'
                         ]
 
 class NestedLoopDesc(namedtuple('NestedLoopDesc', NESTED_LOOP_DESC_LIST)):
@@ -83,13 +82,16 @@ class NestedLoopDesc(namedtuple('NestedLoopDesc', NESTED_LOOP_DESC_LIST)):
                 raise TypeError('NestedLoopDesc: element in data_loops '
                                 'must be a DataDimLoops instance.')
 
-        if not isinstance(ntp.pe_1d_conv_ful_buf, bool):
+        if not isinstance(ntp.regf_reusable, tuple):
             raise TypeError('NestedLoopDesc: pe_1d_conv_ful_buf must '
-                            'be a boolean.')
-
-        if not isinstance(ntp.is_filter_fold, bool):
-            raise TypeError('NestedLoopDesc: is_filter_fold must '
-                            'be a boolean.')
+                            'be a tuple.')
+        if len(ntp.regf_reusable) != de.NUM:
+            raise ValueError('NestedLoopDesc: regf_reusable must have length {}.'
+                             .format(de.NUM))
+        for rr in ntp.regf_reusable:
+            if not isinstance(rr, bool):
+                raise TypeError('NestedLoopDesc: element in regf_reusable '
+                                'must be a boolean value.')
 
         return ntp
 

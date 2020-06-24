@@ -467,18 +467,12 @@ class LoopBlockingScheme():
         # print(self.bl_ts)
         # print(self.bl_ords)
         # print(self.fetch)
-        if not self.nld.pe_1d_conv_ful_buf and \
-            all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
-               == 1 for _ord in range(self.bl_ords[self.BL.REGF][le.OFM])):
-            self.fetch[self.BL.REGF][de.IFM] *= self.bl_ts[self.BL.REGF][le.OFM]
-        if not self.nld.pe_1d_conv_ful_buf and \
-            all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
-               == 1 for _ord in range(self.bl_ords[self.BL.REGF][le.IFM])):
-            self.fetch[self.BL.REGF][de.OFM] *= self.bl_ts[self.BL.REGF][le.IFM]
-        if self.nld.is_filter_fold and \
-           all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
-               == 1 for _ord in range(self.bl_ords[self.BL.REGF][le.BAT])):
-            self.fetch[self.BL.REGF][de.FIL] *= self.bl_ts[self.BL.REGF][le.BAT]
+        for dce in range(de.NUM):
+            irr_dim = le.NUM - 1 - dce
+            if not self.nld.regf_reusable[dce] and \
+                all(self.bl_ts[self.BL.REGF][self.bl_ords[self.BL.REGF].index(_ord)] \
+                    == 1 for _ord in range(self.bl_ords[self.BL.REGF][irr_dim])):
+                self.fetch[self.BL.REGF][dce] *= self.bl_ts[self.BL.REGF][irr_dim]
         # print(self.fetch)
         # print("***")
 
